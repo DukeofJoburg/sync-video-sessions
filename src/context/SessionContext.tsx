@@ -108,31 +108,33 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   // Join an existing session
   const joinSession = (sessionId: string, userName: string): boolean => {
     // In a real implementation, this would fetch session data from an API
-    // For now, we'll simulate success
+    // For demo purposes - simulate fetching session info from a server
+    // We'll hard-code session data but use the right session ID
+    
     const userId = uuidv4();
     
-    // For demo purposes - normally you'd fetch this from a backend
     const newUser: User = {
       id: userId,
       name: userName,
       role: 'secondary' // New joiners start as secondary users
     };
 
-    // Mock session data
+    // For demo purposes, we're simulating a session with the correct URL
+    // In a real app, you would fetch the actual session info from a backend
     const mockSession: Session = {
       id: sessionId,
-      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // Placeholder
-      videoId: 'dQw4w9WgXcQ',
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // This would come from the server
+      videoId: 'dQw4w9WgXcQ', // This would come from the server
       createdAt: new Date(),
       updatedAt: new Date(),
       users: [
-        // Admin user
+        // Admin user would be fetched from the server
         {
           id: 'admin-id',
           name: 'Admin User',
           role: 'admin'
         },
-        // New user
+        // Add the new user
         newUser
       ],
       videoState: {

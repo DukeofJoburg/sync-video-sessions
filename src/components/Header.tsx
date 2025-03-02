@@ -25,7 +25,7 @@ const Header: React.FC = () => {
           className="text-2xl font-medium tracking-tight cursor-pointer animate-fade-in"
           onClick={() => navigate('/')}
         >
-          SyncWatch
+          InSynk
         </div>
         {session && (
           <div className="ml-6 text-sm text-muted-foreground animate-fade-in">
