@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import ReactPlayer from 'react-player/youtube';
 import { useSession } from '@/context/SessionContext';
@@ -13,7 +12,7 @@ import {
   Monitor, 
   Fullscreen,
   MonitorPlay,
-  ChevronDown,
+  RefreshCw,
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -184,16 +183,14 @@ const VideoPlayer = () => {
           onProgress={handleProgress}
           onDuration={handleDuration}
           config={{
-            youtube: {
-              playerVars: {
-                modestbranding: 1,
-                rel: 0,
-                playsinline: 1,
-                ...(resolution !== 'auto' && { vq: resolution })
-              },
-              onUnstarted: () => {
-                console.log('YouTube player unstarted');
-              }
+            playerVars: {
+              modestbranding: 1,
+              rel: 0,
+              playsinline: 1,
+              ...(resolution !== 'auto' && { vq: resolution })
+            },
+            onUnstarted: () => {
+              console.log('YouTube player unstarted');
             }
           }}
         />
