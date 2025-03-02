@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 
 const UserAvatar: React.FC<{ user: User; size?: number }> = ({ user, size = 8 }) => {
   const getInitials = (name: string) => {
@@ -119,6 +120,7 @@ const UserListItem: React.FC<{ user: User; order?: number }> = ({ user, order })
 
 const UserList: React.FC = () => {
   const { session, getPrimaryUsers, getSecondaryUsers, refreshSession } = useSession();
+  const { toast } = useToast();
   
   // Auto-refresh participant list periodically
   useEffect(() => {
@@ -136,6 +138,15 @@ const UserList: React.FC = () => {
   const primaryUsers = getPrimaryUsers();
   const secondaryUsers = getSecondaryUsers();
   
+  const handleRefresh = () => {
+    refreshSession();
+    toast({
+      title: "Participants Refreshed",
+      description: "The participant list has been updated",
+      duration: 3000
+    });
+  };
+  
   return (
     <div className="animate-fade-in">
       <div className="flex flex-col">
@@ -144,11 +155,11 @@ const UserList: React.FC = () => {
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-7 w-7" 
-            onClick={refreshSession}
+            className="h-7 w-7 hover:bg-secondary transition-colors" 
+            onClick={handleRefresh}
             title="Refresh Participants"
           >
-            <RefreshCw size={14} />
+            <RefreshCw size={14} className="text-muted-foreground hover:text-foreground" />
           </Button>
         </div>
         
