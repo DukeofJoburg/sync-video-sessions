@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSession } from '@/context/SessionContext';
 import { User, UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -13,6 +13,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const UserAvatar: React.FC<{ user: User; size?: number }> = ({ user, size = 8 }) => {
   const getInitials = (name: string) => {
@@ -121,6 +126,8 @@ const UserListItem: React.FC<{ user: User; order?: number }> = ({ user, order })
 const UserList: React.FC = () => {
   const { session, getPrimaryUsers, getSecondaryUsers, refreshSession } = useSession();
   const { toast } = useToast();
+  const [isPrimaryCollapsed, setIsPrimaryCollapsed] = useState(false);
+  const [isSecondaryCollapsed, setIsSecondaryCollapsed] = useState(false);
   
   // Auto-refresh participant list periodically
   useEffect(() => {
@@ -151,7 +158,7 @@ const UserList: React.FC = () => {
     <div className="animate-fade-in">
       <div className="flex flex-col">
         <div className="flex justify-between items-center px-3 py-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Primary Users</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">Participants</h3>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -163,33 +170,79 @@ const UserList: React.FC = () => {
           </Button>
         </div>
         
-        <div className="space-y-0.5">
-          {primaryUsers.map((user, index) => (
-            <UserListItem key={user.id} user={user} order={index} />
-          ))}
+        {/* Primary Users Section */}
+        <Collapsible
+          open={!isPrimaryCollapsed}
+          onOpenChange={(open) => setIsPrimaryCollapsed(!open)}
+          className="w-full"
+        >
+          <div className="flex justify-between items-center px-3 py-2 hover:bg-secondary/30 transition-colors">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center gap-2 cursor-pointer w-full">
+                <h3 className="text-sm font-medium text-muted-foreground">Primary Users</h3>
+                <span className="text-xs text-muted-foreground bg-secondary px-1.5 rounded-full">
+                  {primaryUsers.length}
+                </span>
+                {isPrimaryCollapsed ? (
+                  <ChevronDown size={14} className="text-muted-foreground ml-auto" />
+                ) : (
+                  <ChevronUp size={14} className="text-muted-foreground ml-auto" />
+                )}
+              </div>
+            </CollapsibleTrigger>
+          </div>
           
-          {primaryUsers.length === 0 && (
-            <div className="px-3 py-2 text-sm text-muted-foreground/50 italic">
-              No primary users
+          <CollapsibleContent>
+            <div className="space-y-0.5">
+              {primaryUsers.map((user, index) => (
+                <UserListItem key={user.id} user={user} order={index} />
+              ))}
+              
+              {primaryUsers.length === 0 && (
+                <div className="px-3 py-2 text-sm text-muted-foreground/50 italic">
+                  No primary users
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
         
-        <div className="px-3 py-2 mt-4">
-          <h3 className="text-sm font-medium text-muted-foreground">Secondary Users</h3>
-        </div>
-        
-        <div className="space-y-0.5">
-          {secondaryUsers.map(user => (
-            <UserListItem key={user.id} user={user} />
-          ))}
+        {/* Secondary Users Section */}
+        <Collapsible
+          open={!isSecondaryCollapsed}
+          onOpenChange={(open) => setIsSecondaryCollapsed(!open)}
+          className="w-full mt-2"
+        >
+          <div className="flex justify-between items-center px-3 py-2 hover:bg-secondary/30 transition-colors">
+            <CollapsibleTrigger asChild>
+              <div className="flex items-center gap-2 cursor-pointer w-full">
+                <h3 className="text-sm font-medium text-muted-foreground">Secondary Users</h3>
+                <span className="text-xs text-muted-foreground bg-secondary px-1.5 rounded-full">
+                  {secondaryUsers.length}
+                </span>
+                {isSecondaryCollapsed ? (
+                  <ChevronDown size={14} className="text-muted-foreground ml-auto" />
+                ) : (
+                  <ChevronUp size={14} className="text-muted-foreground ml-auto" />
+                )}
+              </div>
+            </CollapsibleTrigger>
+          </div>
           
-          {secondaryUsers.length === 0 && (
-            <div className="px-3 py-2 text-sm text-muted-foreground/50 italic">
-              No secondary users
+          <CollapsibleContent>
+            <div className="space-y-0.5">
+              {secondaryUsers.map(user => (
+                <UserListItem key={user.id} user={user} />
+              ))}
+              
+              {secondaryUsers.length === 0 && (
+                <div className="px-3 py-2 text-sm text-muted-foreground/50 italic">
+                  No secondary users
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );
