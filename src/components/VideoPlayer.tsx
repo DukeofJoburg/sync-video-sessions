@@ -10,12 +10,10 @@ import {
   Pause, 
   Volume2, 
   VolumeX, 
-  Settings, 
+  Monitor, 
   Fullscreen,
   MonitorPlay,
   ChevronDown,
-  ChevronUp,
-  Monitor
 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -41,8 +39,8 @@ const VideoPlayer = () => {
     updateVideoState,
     sendVideoAction 
   } = useSession();
-  const [showResolutionMenu, setShowResolutionMenu] = useState(false);
   const [resolution, setResolution] = useState('auto');
+  const [isPiPActive, setIsPiPActive] = useState(false);
 
   if (!session) return null;
 
@@ -108,7 +106,17 @@ const VideoPlayer = () => {
 
   const handleResolutionChange = (value: string) => {
     setResolution(value);
-    // In a real app, we would update this for all users
+    
+    // Apply the resolution change to the video
+    if (playerRef.current) {
+      // Update the player with the new quality setting
+      // In ReactPlayer, we need to set this via the config prop
+      sendVideoAction({
+        type: 'quality',
+        payload: value,
+        userId: currentUser!.id
+      });
+    }
   };
 
   const toggleFullscreen = () => {
@@ -125,16 +133,38 @@ const VideoPlayer = () => {
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
+        setIsPiPActive(false);
       } else {
         const video = containerRef.current?.querySelector('video');
         if (video) {
           await video.requestPictureInPicture();
+          setIsPiPActive(true);
+          
+          // Add event listener to detect when PiP is closed by the user
+          video.addEventListener('leavepictureinpicture', () => {
+            setIsPiPActive(false);
+          }, { once: true });
         }
       }
     } catch (err) {
       console.error('Picture-in-Picture failed:', err);
     }
   };
+
+  // Monitor for PiP state changes
+  useEffect(() => {
+    const handlePiPChange = () => {
+      setIsPiPActive(!!document.pictureInPictureElement);
+    };
+    
+    document.addEventListener('enterpictureinpicture', handlePiPChange);
+    document.addEventListener('leavepictureinpicture', handlePiPChange);
+    
+    return () => {
+      document.removeEventListener('enterpictureinpicture', handlePiPChange);
+      document.removeEventListener('leavepictureinpicture', handlePiPChange);
+    };
+  }, []);
 
   return (
     <div ref={containerRef} className="video-player-container rounded-lg overflow-hidden shadow-lg">
@@ -154,9 +184,16 @@ const VideoPlayer = () => {
           onProgress={handleProgress}
           onDuration={handleDuration}
           config={{
-            playerVars: {
-              modestbranding: 1,
-              rel: 0
+            youtube: {
+              playerVars: {
+                modestbranding: 1,
+                rel: 0,
+                playsinline: 1,
+                ...(resolution !== 'auto' && { vq: resolution })
+              },
+              onUnstarted: () => {
+                console.log('YouTube player unstarted');
+              }
             }
           }}
         />
@@ -211,7 +248,7 @@ const VideoPlayer = () => {
             {/* Resolution selector */}
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" title="Video Quality">
                   <Monitor size={18} />
                 </Button>
               </PopoverTrigger>
@@ -235,6 +272,8 @@ const VideoPlayer = () => {
               variant="ghost" 
               size="icon"
               onClick={togglePictureInPicture}
+              title="Picture-in-Picture"
+              className={isPiPActive ? "text-primary" : ""}
             >
               <MonitorPlay size={18} />
             </Button>
@@ -244,6 +283,7 @@ const VideoPlayer = () => {
               variant="ghost" 
               size="icon"
               onClick={toggleFullscreen}
+              title="Fullscreen"
             >
               <Fullscreen size={18} />
             </Button>

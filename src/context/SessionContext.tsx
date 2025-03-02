@@ -1,4 +1,3 @@
-
 import React, {
   createContext,
   useState,
@@ -18,18 +17,16 @@ interface SessionContextProps {
   setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
   updateVideoState: (newState: VideoState) => void;
   sendVideoAction: (action: VideoAction) => void;
-  // Added methods for session management
   createSession: (videoUrl: string, userName: string) => string;
   joinSession: (sessionId: string, userName: string) => boolean;
   leaveSession: () => void;
-  // Added methods for user management
   isAdmin: boolean;
   promoteToAdmin: (userId: string) => void;
   promoteToPrimary: (userId: string) => void;
   demoteToSecondary: (userId: string) => void;
-  // Added methods for user filtering
   getPrimaryUsers: () => User[];
   getSecondaryUsers: () => User[];
+  refreshSession: () => void;
 }
 
 const SessionContext = createContext<SessionContextProps | undefined>(undefined);
@@ -38,7 +35,6 @@ interface SessionProviderProps {
   children: ReactNode;
 }
 
-// Helper to extract YouTube ID from various formats of URLs
 const extractYouTubeId = (url: string): string => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
   const match = url.match(regExp);
@@ -48,22 +44,60 @@ const extractYouTubeId = (url: string): string => {
 export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-  // Check if current user is admin
   const isAdmin = currentUser?.role === 'admin';
 
+  const refreshSession = () => {
+    setLastRefresh(new Date());
+  };
+
   useEffect(() => {
-    // Generate a session ID if one doesn't exist in local storage
     if (!localStorage.getItem('sessionId')) {
       localStorage.setItem('sessionId', generateSessionId());
     }
 
-    // Here, you would typically fetch the session data from an API
-    // based on the session ID stored in local storage.
-    // For now, we'll leave it as null.
+    const storedSessionId = localStorage.getItem('currentSession');
+    const storedUser = localStorage.getItem('currentUser');
+    
+    if (storedSessionId && storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        setCurrentUser(parsedUser);
+        
+        const mockSession: Session = {
+          id: storedSessionId,
+          videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          videoId: 'dQw4w9WgXcQ',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          users: [
+            {
+              id: 'admin-id',
+              name: 'Admin User',
+              role: 'admin'
+            },
+            parsedUser
+          ],
+          videoState: {
+            isPlaying: false,
+            currentTime: 0,
+            duration: 0,
+            volume: 0.5,
+            muted: false,
+            playbackRate: 1
+          }
+        };
+        
+        setSession(mockSession);
+      } catch (error) {
+        console.error('Error restoring session:', error);
+        localStorage.removeItem('currentSession');
+        localStorage.removeItem('currentUser');
+      }
+    }
   }, []);
 
-  // Create a new session
   const createSession = (videoUrl: string, userName: string): string => {
     const videoId = extractYouTubeId(videoUrl);
     if (!videoId) {
@@ -77,7 +111,7 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     const newUser: User = {
       id: userId,
       name: userName,
-      role: 'admin' // Creator is always the admin
+      role: 'admin'
     };
 
     const newSession: Session = {
@@ -105,36 +139,27 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     return sessionId;
   };
 
-  // Join an existing session
   const joinSession = (sessionId: string, userName: string): boolean => {
-    // In a real implementation, this would fetch session data from an API
-    // For demo purposes - simulate fetching session info from a server
-    // We'll hard-code session data but use the right session ID
-    
     const userId = uuidv4();
     
     const newUser: User = {
       id: userId,
       name: userName,
-      role: 'secondary' // New joiners start as secondary users
+      role: 'secondary'
     };
 
-    // For demo purposes, we're simulating a session with the correct URL
-    // In a real app, you would fetch the actual session info from a backend
     const mockSession: Session = {
       id: sessionId,
-      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', // This would come from the server
-      videoId: 'dQw4w9WgXcQ', // This would come from the server
+      videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+      videoId: 'dQw4w9WgXcQ',
       createdAt: new Date(),
       updatedAt: new Date(),
       users: [
-        // Admin user would be fetched from the server
         {
           id: 'admin-id',
           name: 'Admin User',
           role: 'admin'
         },
-        // Add the new user
         newUser
       ],
       videoState: {
@@ -155,19 +180,15 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     return true;
   };
 
-  // Leave the current session
   const leaveSession = () => {
     if (!session || !currentUser) return;
 
-    // In a real implementation, you would notify other users
-    // For now, we'll just clear the local state
     setSession(null);
     setCurrentUser(null);
     localStorage.removeItem('currentSession');
     localStorage.removeItem('currentUser');
   };
 
-  // Promote a user to admin
   const promoteToAdmin = (userId: string) => {
     if (!session || !isAdmin) return;
 
@@ -184,7 +205,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     });
   };
 
-  // Promote a user to primary
   const promoteToPrimary = (userId: string) => {
     if (!session || !isAdmin) return;
 
@@ -201,7 +221,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     });
   };
 
-  // Demote a user to secondary
   const demoteToSecondary = (userId: string) => {
     if (!session || !isAdmin) return;
 
@@ -218,7 +237,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     });
   };
 
-  // Get list of primary users
   const getPrimaryUsers = (): User[] => {
     if (!session) return [];
     return session.users.filter(user => user.role === 'admin' || user.role === 'primary')
@@ -229,7 +247,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
       });
   };
 
-  // Get list of secondary users
   const getSecondaryUsers = (): User[] => {
     if (!session) return [];
     return session.users.filter(user => user.role === 'secondary');
@@ -248,8 +265,6 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
   const sendVideoAction = (action: VideoAction) => {
     if (!session) return;
     
-    // For now, directly apply the action to the local state
-    // In a real implementation, this would send the action to other users
     switch (action.type) {
       case 'play':
         updateVideoState({
@@ -269,7 +284,12 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
           currentTime: action.payload
         });
         break;
-      // Handle other action types as needed
+      case 'quality':
+        updateVideoState({
+          ...session.videoState,
+          quality: action.payload
+        });
+        break;
     }
   };
 
@@ -288,7 +308,8 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({ children }) =>
     promoteToPrimary,
     demoteToSecondary,
     getPrimaryUsers,
-    getSecondaryUsers
+    getSecondaryUsers,
+    refreshSession
   };
 
   return (

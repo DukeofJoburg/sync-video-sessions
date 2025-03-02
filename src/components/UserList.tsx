@@ -1,9 +1,9 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSession } from '@/context/SessionContext';
 import { User, UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { ChevronUp, ChevronDown, Crown, Shield } from 'lucide-react';
+import { ChevronUp, ChevronDown, Crown, Shield, RefreshCw } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -118,7 +118,16 @@ const UserListItem: React.FC<{ user: User; order?: number }> = ({ user, order })
 };
 
 const UserList: React.FC = () => {
-  const { session, getPrimaryUsers, getSecondaryUsers } = useSession();
+  const { session, getPrimaryUsers, getSecondaryUsers, refreshSession } = useSession();
+  
+  // Auto-refresh participant list periodically
+  useEffect(() => {
+    const refreshInterval = setInterval(() => {
+      refreshSession();
+    }, 15000); // Refresh every 15 seconds
+    
+    return () => clearInterval(refreshInterval);
+  }, [refreshSession]);
   
   if (!session) {
     return null;
@@ -130,8 +139,17 @@ const UserList: React.FC = () => {
   return (
     <div className="animate-fade-in">
       <div className="flex flex-col">
-        <div className="px-3 py-2">
+        <div className="flex justify-between items-center px-3 py-2">
           <h3 className="text-sm font-medium text-muted-foreground">Primary Users</h3>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7" 
+            onClick={refreshSession}
+            title="Refresh Participants"
+          >
+            <RefreshCw size={14} />
+          </Button>
         </div>
         
         <div className="space-y-0.5">
